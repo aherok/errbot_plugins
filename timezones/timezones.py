@@ -3,13 +3,23 @@ import googlemaps
 from datetime import datetime, timedelta
 from itertools import chain
 from errbot import BotPlugin, botcmd
+from pytz import timezone
+
 
 CONFIG_TEMPLATE = {
     'GMAP_API_KEY': "",
     'GMAP_LANG': "EN",
     'CATCH_PHRASE': "^.*(what|which) time is\s(it\s)?in\s(?P<city>[\w -']+)\??$",
-    'ANSWER_PHRASE': "{user}: The time in {city} is {time} ({tz})"
+    'ANSWER_PHRASE': "{user}: The time in {city} is {time} ({tz})",
+    'SERVER_TIMEZONE': 'Europe/Warsaw',
 }
+
+
+def convert_timezone(dt, src_tz, dest_tz):
+    src = timezone(src_tz)
+    dest = timezone(dest_tz)
+    current_time = datetime.now(tz=src)
+    return current_time.astimezone(tz=dest)
 
 
 class Timezones(BotPlugin):
@@ -110,11 +120,23 @@ class Timezones(BotPlugin):
         if not tzinfo:
             return False
 
+        src_tz = self.config.get('SERVER_TIMEZONE')
+
+        # calculate proper TZ offset
         tz_offset = tzinfo.get('rawOffset') + tzinfo.get('dstOffset')
+
+        # name, like 'Europe/Warsaw'
         tz_name = tzinfo.get('timeZoneId')
 
+        # location name, gotten from API
         city_name = result.get('formatted_address', location)
-        time = current_time + timedelta(seconds=tz_offset)
+
+        # converted time
+        time = convert_timezone(
+            current_time,
+            src_tz,
+            tz_name
+        )
 
         return {
             'city': city_name,
