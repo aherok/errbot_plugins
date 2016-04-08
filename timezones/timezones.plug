@@ -1,0 +1,12 @@
+[Core]
+module = timezones
+name = Timezones
+
+[Documentation]
+description = Informing about timezones around the world
+
+[Python]
+version = 3
+
+[Errbot]
+
